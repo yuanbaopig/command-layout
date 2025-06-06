@@ -89,35 +89,6 @@ func (s *server) PrepareRun() (preparedServer, error) {
 	ps := preparedServer{}
 	service := &installservice.Install{}
 
-	//for _, d := range contract.MongoVersionList {
-	//	install_package.RegistryDbPackages(d)
-	//}
-
-	/*
-		检查系统版本与对应安装包
-		文件系统检查，是否是xfs文件系统 (done)
-		检查对应的数据目录是否为空 (done)
-	*/
-
-	// 检查安装包是否支持
-	//sName, SVersion, err := module.GetLinuxVersion()
-	//if err != nil {
-	//	return ps, err
-	//}
-	//
-	//s.SysVersion = contract.SystemInfo{
-	//	Name:    sName,
-	//	Version: SVersion,
-	//}
-	//
-	//if pg, ok := install_package.GetDbPackageMapping().GetPackage(s.SysVersion, s.DbVersion); ok {
-	//	s.DbPackage = pg
-	//} else {
-	//	pgInfo := install_package.DbPackageInfoFormat(s.SysVersion, s.DbVersion)
-	//	supportInfo := install_package.PrintPackageInfo()
-	//	return ps, fmt.Errorf("%s package not matching, only support: %v", pgInfo, supportInfo)
-	//}
-
 	dbPackage, err := service.GetPackage(s.DbVersion)
 	if err != nil {
 		log.Debug(err)
@@ -125,20 +96,6 @@ func (s *server) PrepareRun() (preparedServer, error) {
 	}
 	s.DbPackage = dbPackage
 
-	//// 检查数据目录
-	//if err := filecheck.CheckDirEmpty(s.DataPath); err != nil {
-	//	return ps, err
-	//}
-	//
-	//// 创建目录
-	//if err := module.CreateDir(s.DataPath); err != nil {
-	//	return ps, err
-	//}
-	//
-	//if err := module.CreateDir(contract.PackagePath); err != nil {
-	//	return ps, err
-	//}
-	//
 	if err := common.PrepareDir(service, s.BaseDataPath); err != nil {
 		return ps, err
 	}
@@ -180,64 +137,6 @@ func (s preparedServer) Run() error {
 		启动hugepage服务 (done)
 	*/
 
-	//  创建mongod 用户
-	//log.Debug("create process user")
-	//if err := module.AddNoLoginUser(contract.MongoUser, module.NoLogin); err != nil {
-	//	log.Error(err)
-	//	return fmt.Errorf("create mongod user fialed, %v", err)
-	//}
-	//
-	//// 检查安装包是否存在，不存在则下载
-	//log.Debug("down load install package")
-	////installPackage := fmt.Sprintf("%s/%s", packagePath, s.DbPackage.PackageName)
-	//installPackage := path.Join(contract.PackagePath, s.DbPackage.PackageName)
-	//if err := filecheck.CheckFileOrDirExist(installPackage); err != nil {
-	//	// 文件不存在或者打开异常
-	//	if err := module.DownloadFile(ctx, s.DbPackage.DownLoadURL, path.Join(contract.PackagePath, s.DbPackage.PackageName)); err != nil {
-	//		return err
-	//	}
-	//}
-	//
-	//// 解压缩
-	//log.Debug("extract install package")
-	////baseDir := fmt.Sprintf("%s/%s", packagePath, s.DbPackage.DirName)
-	//baseDir := path.Join(contract.PackagePath, s.DbPackage.DirName)
-	//if err := filecheck.CheckFileOrDirExist(baseDir); err != nil {
-	//	// 文件不存在或者打开异常
-	//	if err := module.Extract(ctx, installPackage, contract.PackagePath); err != nil {
-	//		return err
-	//	}
-	//}
-	//
-	//// 创建软链接
-	//log.Debug("create link file")
-	//if err := module.CreateSymlink(baseDir, contract.LinkPath); err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
-	//
-	//// 创建环境变量
-	//log.Debug("set env variables")
-	//if err := module.AddEnvToFile(contract.Profile, "PATH", contract.ProfileEnv); err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
-	//
-	//// 创建数据目录
-	//log.Debug("create data directory")
-	////dataDir := fmt.Sprintf("%s/data%d", s.DataPath, s.Port)
-	//dataDir := path.Join(s.BaseDataPath, fmt.Sprintf("data%d", s.Port))
-	//if err := module.CreateDir(dataDir); err != nil {
-	//	return err
-	//}
-	//
-	//// 创建日志目录
-	//log.Debug("create log directory")
-	////logDir := fmt.Sprintf("%s/log%d", s.DataPath, s.Port)
-	//logDir := path.Join(s.BaseDataPath, fmt.Sprintf("log%d", s.Port))
-	//if err := module.CreateDir(logDir); err != nil {
-	//	return err
-	//}
 	err := common.BaseInstall(ctx, s.service, s.server)
 	if err != nil {
 		return err
@@ -276,19 +175,11 @@ func (s preparedServer) Run() error {
 	systemdDbCfg.ServiceName = fmt.Sprintf(contract.SystemdMongoDServiceName, s.Port)
 	systemdDbCfg.Config = ini.NewMongoDSystemIniConfig(ini.WithMongoDConfig(DbCfgName))
 	systemdDbCfg.FileName = path.Join(contract.SystemdConfigPath, systemdDbCfg.ServiceName)
-	//if err := ini.CreateIniConfig(systemdMongoDConfPath, systemdMongoDConf); err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
 
 	systemdHugePageCfg := common.SystemdServiceConfig{}
 	systemdHugePageCfg.ServiceName = contract.SystemdHugepageServiceName
 	systemdHugePageCfg.Config = ini.NewHugePageSystemdIniConfig(ini.WithService(systemdDbCfg.ServiceName))
 	systemdHugePageCfg.FileName = path.Join(contract.SystemdConfigPath, contract.SystemdHugepageServiceName)
-	//if err := ini.CreateIniConfig(systemdHugepageConfPath, systemHugePageConf); err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
 
 	if err := common.ServiceStartAndEnable(ctx, systemdHugePageCfg, s.service); err != nil {
 		return err
@@ -298,28 +189,7 @@ func (s preparedServer) Run() error {
 		return err
 	}
 
-	//log.Debug("systemd daemon reload")
-	//if err := module.SystemdReload(ctx); err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
-	//
-	//log.Debug("start mongod service")
-	//if err := module.StartService(ctx, contract.SystemdHugepageServiceName); err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
-	//
-	//if err := module.StartService(ctx, systemdMongoDServiceName); err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
-	//
-	//// 加入自启动
-	//if err := module.EnableService(ctx, []string{systemdMongoDServiceName, contract.SystemdHugepageServiceName}); err != nil {
-	//	log.Error(err)
-	//	return err
-	//}
+	log.Debug("mongod install done")
 
 	return nil
 }

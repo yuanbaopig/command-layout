@@ -117,5 +117,7 @@ func (p *preparedServer) Run() error {
 		return fmt.Errorf("symlink file drop fialed: %w", err)
 	}
 
+	log.Debug("mongod uninstall done")
+
 	return nil
 }

@@ -75,48 +75,12 @@ func (s *server) PrepareRun() (preparedServer, error) {
 	ps := preparedServer{}
 	service := &installservice.Install{}
 
-	//sName, SVersion, err := common.GetLinuxVersion()
-	//if err != nil {
-	//	log.Error(err)
-	//	return ps, err
-	//}
-	//
-	//s.SysVersion = common.SystemInfo{
-	//	Name:    sName,
-	//	Version: SVersion,
-	//}
-	//
-	//if pg, ok := common.GetDbPackageMapping().GetPackage(s.SysVersion, s.DbVersion); ok {
-	//	s.DbPackage = pg
-	//} else {
-	//	pgInfo := common.DbPackageInfoFormat(s.SysVersion, s.DbVersion)
-	//	supportInfo := common.PrintPackageInfo()
-	//	return ps, fmt.Errorf("%s package not matching, only support: %v", pgInfo, supportInfo)
-	//}
-
 	dbPackage, err := service.GetPackage(s.DbVersion)
 	if err != nil {
 		log.Debug(err)
 		return ps, err
 	}
 	s.DbPackage = dbPackage
-
-	//// 检查数据目录
-	//if err := ps.service.CheckDirEmpty(s.DataPath); err != nil {
-	//	log.Debug(err)
-	//	return ps, err
-	//}
-	//
-	//// 创建目录
-	//if err := ps.service.CreateDir(s.DataPath); err != nil {
-	//	log.Debug(err)
-	//	return ps, err
-	//}
-	//
-	//if err := ps.service.CreateDir(contract.PackagePath); err != nil {
-	//	log.Debug(err)
-	//	return ps, err
-	//}
 
 	if err := common.PrepareDir(service, s.DataPath); err != nil {
 		return ps, err
@@ -183,6 +147,8 @@ func (s preparedServer) Run() error {
 	if err := common.ServiceStartAndEnable(ctx, systemdCfg, s.service); err != nil {
 		return err
 	}
+
+	log.Debug("mongos install done")
 
 	return nil
 }
