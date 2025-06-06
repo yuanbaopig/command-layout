@@ -1,0 +1,13 @@
+# macos
+.DS_Store
+
+# command
+cmd/
+
+# test dir
+test/
+
+# test mod
+*_test.go
+
+
